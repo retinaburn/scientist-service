@@ -19,7 +19,6 @@ const argv = require('yargs')
         .alias('replace', 'r')
         .nargs('replace', 2) //2 arguments required for 'replace'
         .coerce('replace', function(arg) {
-            var regex = undefined
             //test supplied regexp|string to see if it is a valid regexp 
             //and replace argument with compiled regexp if it is
             try{ 
