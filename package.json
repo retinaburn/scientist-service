@@ -1,0 +1,28 @@
+{
+  "name": "scientist-service",
+  "version": "0.0.1",
+  "description": "Scientist service for mirroring GET requests to Control and Candidate services",
+  "main": "app.js",
+  "dependencies": {
+    "yargs": "^13.2.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/retinaburn/scientist-service.git"
+  },
+  "keywords": [
+    "nodejs",
+    "mirror",
+    "scientist"
+  ],
+  "author": "Craig Moynes",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/retinaburn/scientist-service/issues"
+  },
+  "homepage": "https://github.com/retinaburn/scientist-service#readme"
+}
