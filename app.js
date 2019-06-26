@@ -1,8 +1,10 @@
 const 
-debug   = require('debug')('scientist'),
-http    = require('http'),
-url     = require('url'),
-argv    = require('yargs')
+debug       = require('debug')('scientist'),
+dcontrol    = require('debug')('scientist:control'),
+http        = require('http'),
+url         = require('url'),
+axios       = require('axios'),
+argv = require('yargs')
     .alias('help', 'h')
     .alias('help', '?')
     .command(require('./command-module'))
@@ -38,13 +40,24 @@ if (argv.add){
     })
 }
 
+//TODO how can I clean this ugly up
+var CONTROL_RESPONSE_STATUS, CONTROL_RESPONSE_BODY, CONTROL_ELAPSED_NANOSEC
+var CANDIDATE_RESPONSE_STATUS, CANDIDATE_RESPONSE_BODY, CANDIDATE_ELAPSED_NANOSEC
+
 var server = http.createServer( (req, res) => {
     debug('Incoming Request: %o', req.url)
     let parsedUrl = url.parse(req.url, true);
     debug('Incoming Request Path: %o', parsedUrl.pathname)
     debug('Incoming Request Headers: %o', req.headers)
 
+    //First thing we want to do is send the request to Control - after that happens we can take care of Candidate
     let controlRequestOptions = constructionOptions(argv.controlHost, req.url.toString(), req.headers)
+
+    //Control Request
+    //- sends response from Control back to caller
+    let control = sendControlRequest(controlRequestOptions, res, handleControlResponse, handleControlRequestError)
+
+
     let candidateRequestOptions = controlRequestOptions
 
     // if candidateHost specified, use that for candidate request
@@ -73,8 +86,6 @@ var server = http.createServer( (req, res) => {
 server.listen( port )
 console.log(`\nListening on port ${port}`)
 
-
-
 function constructionOptions(hostname, path, requestHeaders){
     delete requestHeaders['host'] //remove the scientist service host
     let options = {
@@ -83,4 +94,53 @@ function constructionOptions(hostname, path, requestHeaders){
         headers: requestHeaders
     }
     return options
+}
+
+async function sendControlRequest(options, originatingResponse, handleResponse, handleRequestError){
+    let controlStartTime = process.hrtime.bigint();
+    
+    dcontrol('Constructed options: %o', options)
+
+    return axios.get( options.url, options).then(function(res){
+        dcontrol('GET status: %o', res.status)
+        setControlElapsedTime(controlStartTime, process.hrtime.bigint())
+        handleResponse(originatingResponse, res)
+    })
+    .catch(function(error){
+        setControlElapsedTime(controlStartTime, process.hrtime.bigint())
+        if (error.response){
+            // control response status code outside axios default response.status range
+            dcontrol('Control GET status: %o', error.response.status)
+            handleResponse(originatingResponse, error.response)
+        } else if (error.request) {
+            // no response, so its a bad request
+            handleRequestError(originatingResponse, error)
+        } else {
+            dcontrol('Control Error', error.message)
+        }
+    })
+
+}
+
+function handleControlResponse(originatingResponse, res){
+    dcontrol('Returning Control Response to Originator')
+    let data = JSON.stringify(res.data)
+    originatingResponse.writeHead(res.status, res.headers)
+    originatingResponse.write(data)
+    originatingResponse.end()
+    CONTROL_RESPONSE_STATUS = res
+    CONTROL_RESPONSE_BODY = data
+}
+
+function handleControlRequestError(originatingResponse, error){
+    dcontrol('Returning Control error response to Originator')
+    originatingResponse.setHeader('Content-Type', 'application/json')
+    originatingResponse.writeHead(500)
+    originatingResponse.write(error.toString())
+    originatingResponse.end()
+}
+
+function setControlElapsedTime(startTime, endTime){
+    dcontrol(`Start: ${startTime}, End: ${endTime}`)
+    CONTROL_ELAPSED_NANOSEC = endTime - startTime;
 }
