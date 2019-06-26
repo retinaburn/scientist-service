@@ -31,7 +31,7 @@ if (argv.delete){
 
 if (argv.add){
     argv.add.forEach( (element) => {
-        var keyval = element.split(':', 2)
+        let keyval = element.split(':', 2)
         console.log(`Adding header to Candidate requests key:(${keyval[0]}) value(${keyval[1]})`)
     })
 }
