@@ -51,13 +51,28 @@ exports.builder = (yargs) => {
     .option('delete', {
         describe: "'key' deletes the specified header from Candidate requests. Multiple delete options may be used. Header deletions occur before add additions",
         alias: ['d','delete-header'],
+        array: true,
         nargs: 1, //deletion requires 1 arg for header key
     })
     .option('add', {
         describe: "'key: value' adds a header to the Candidate request. Multiple add options may be used",
         alias: ['a','add-header'],
+        array: true,
         nargs: 1, //add header requires 1 arg, a string with "key: value"
-        //TODO coerce for checking it is in format key: value
+        coerce: function(arg) {
+            //check each add header specified matches format
+            // and update the array to be split elements
+            arg.forEach(element => {
+                try{
+                    let splitval = element.split(':', 2)
+                    if (splitval[1] == undefined)
+                        throw "Add header format 'key:value'"
+                } catch (err){
+                    throw "Add header format 'key:value'"
+                }
+            })
+            return arg
+        }
     })
     .strict()
     .example('$0 http://host1 http://host2', 'All requests received will be sent first to the Control host (host1), then to Candidate host (host2) and the results compared')
