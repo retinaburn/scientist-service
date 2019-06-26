@@ -1,6 +1,7 @@
 const 
 debug       = require('debug')('scientist'),
 dcontrol    = require('debug')('scientist:control'),
+dcandidate  = require('debug')('scientist:candidate'),
 http        = require('http'),
 url         = require('url'),
 axios       = require('axios'),
@@ -57,7 +58,7 @@ var server = http.createServer( (req, res) => {
     //- sends response from Control back to caller
     let control = sendControlRequest(controlRequestOptions, res, handleControlResponse, handleControlRequestError)
 
-
+    //Candidate Request
     let candidateRequestOptions = controlRequestOptions
 
     // if candidateHost specified, use that for candidate request
@@ -80,6 +81,8 @@ var server = http.createServer( (req, res) => {
             candidateRequestOptions.headers[keyval[0]] = keyval[1]
         })
     }
+
+    let candidate = sendCandidateRequest(candidateRequestOptions, handleCandidateResponse, handleCandidateRequestError)
 
 })
 
@@ -119,6 +122,30 @@ async function sendControlRequest(options, originatingResponse, handleResponse, 
             dcontrol('Control Error', error.message)
         }
     })
+}
+
+async function sendCandidateRequest(options, handleResponse, handleRequestError){
+    var candidateStartTime = process.hrtime.bigint()
+    dcandidate('Construction options: %o', options)
+
+    return axios.get(options.url, options).then(function(res){
+        setCandidateElapsedTime(candidateStartTime, process.hrtime.bigint())
+        dcandidate('GET Status: %o', res.status)
+        handleResponse(res)
+    }).catch(function(error){
+        setCandidateElapsedTime(candidateStartTime, process.hrtime.bigint())
+        if(error.response){
+            //candidate responded with status code outside of axios default range
+            dcandidate('GET Status: %o', error.response.status)
+            handleResponse(error.response)
+        } else if (error.request) {
+            //no response received from candidate
+            handleRequestError(error)
+        } else {
+            dcandidate('Candidate ERror', error.message)
+        }
+        
+    })
 
 }
 
@@ -140,7 +167,21 @@ function handleControlRequestError(originatingResponse, error){
     originatingResponse.end()
 }
 
+function handleCandidateResponse(res){
+    CANDIDATE_RESPONSE_STATUS = res
+    CANDIDATE_RESPONSE_BODY = JSON.stringify(res.data)
+}
+
+function handleCandidateRequestError(error){
+    dcandidate("Error:",error)
+}
+
 function setControlElapsedTime(startTime, endTime){
     dcontrol(`Start: ${startTime}, End: ${endTime}`)
     CONTROL_ELAPSED_NANOSEC = endTime - startTime;
 }
+
+function setCandidateElapsedTime(startTime, endTime){
+    dcandidate(`Start: ${startTime}, End: ${endTime}`)
+    CANDIDATE_ELAPSED_NANOSEC = endTime - startTime;
+  }
