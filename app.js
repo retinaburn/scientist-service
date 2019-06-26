@@ -5,6 +5,7 @@ dcandidate  = require('debug')('scientist:candidate'),
 http        = require('http'),
 url         = require('url'),
 axios       = require('axios'),
+diff        = require('deep-diff').diff
 argv = require('yargs')
     .alias('help', 'h')
     .alias('help', '?')
@@ -84,6 +85,33 @@ var server = http.createServer( (req, res) => {
 
     let candidate = sendCandidateRequest(candidateRequestOptions, handleCandidateResponse, handleCandidateRequestError)
 
+    Promise.all([control, candidate]).then(function(){
+        debug('Comparing results')
+        dcontrol('HTTP Status:', CONTROL_RESPONSE_STATUS)
+        dcontrol('%o', CONTROL_RESPONSE_BODY)
+        dcandidate('HTTP Status:', CANDIDATE_RESPONSE_STATUS)
+        dcandidate('%o', CANDIDATE_RESPONSE_BODY)
+        
+        if(CONTROL_RESPONSE_STATUS.status !== CANDIDATE_RESPONSE_STATUS.status) {
+            console.error('HTTP_STATUS_CODE,ERROR,DO_NOT_MATCH,','Control:',CONTROL_RESPONSE_STATUS.status,',Candidate:',CANDIDATE_RESPONSE_STATUS.status)
+        } else {
+            console.log('HTTP_STATUS_CODE,SUCCESS,MATCH,','Control:',CONTROL_RESPONSE_STATUS.status,',Candidate:',CANDIDATE_RESPONSE_STATUS.status)
+        }
+
+        if(CONTROL_RESPONSE_BODY !== CANDIDATE_RESPONSE_BODY) {
+            console.error('HTTP_RESPONSE_BODY,ERROR,DO_NOT_MATCH,lhs=control rhs=candidate deep-diff=https://www.npmjs.com/package/deep-diff,',diff(JSON.parse(CONTROL_RESPONSE_BODY), JSON.parse(CANDIDATE_RESPONSE_BODY)))
+        } else {
+            console.log('HTTP_RESPONSE_BODY,SUCCESS,MATCH')
+        }
+        
+        console.log(`RESPONSE_TIME,Control,${CONTROL_ELAPSED_NANOSEC} ns,${CONTROL_ELAPSED_NANOSEC/1000000n} ms,Candidate,${CANDIDATE_ELAPSED_NANOSEC} ns,${CANDIDATE_ELAPSED_NANOSEC/1000000n} ms`) 
+    }).catch(error => {
+        if (!CONTROL_RESPONSE_BODY)
+            console.error('HTTP,ERROR,Something went wrong with the control request...invalid host?')
+        else
+            console.log(error.message)
+        return
+    })
 })
 
 server.listen( port )
@@ -184,4 +212,4 @@ function setControlElapsedTime(startTime, endTime){
 function setCandidateElapsedTime(startTime, endTime){
     dcandidate(`Start: ${startTime}, End: ${endTime}`)
     CANDIDATE_ELAPSED_NANOSEC = endTime - startTime;
-  }
+}
