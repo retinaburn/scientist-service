@@ -4,6 +4,7 @@
   "description": "Scientist service for mirroring GET requests to Control and Candidate services",
   "main": "app.js",
   "dependencies": {
+    "debug": "^4.1.1",
     "yargs": "^13.2.4"
   },
   "devDependencies": {
