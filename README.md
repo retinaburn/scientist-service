@@ -8,7 +8,7 @@ Provide a service that can be deployed locally, or remotely which allows for com
 
 Sometimes I find myself in one of the following:
 
-### Compare udpated local service against deployed service
+### Compare updated local service against deployed service
 I have an existing service in an environment, say production. There is a change in requirements, so I update the tests and the codebase locally. I run my unit tests, and any integration tests and everything looks ok. But how does the new service perform compare to the old service? Does it return the same responses for the same input. 
 
 ### Compare behaviour across versions of a deployed service 

@@ -1,5 +1,5 @@
 exports.command = ['run <control-host> [candidate-host] [options]', '$0 <control-host> [candidate-host] [options]']
-exports.describe = "Scientist service is a proxy that sends requets to the Control endpoint" +
+exports.describe = "Scientist service is a proxy that sends requests to the Control endpoint" +
     " and returns the response to the caller, while also mirroring the request to the Candidate endpoint." +
     " comparing the response status codes and response bodies.\n" +
     "\n" +
